@@ -1,43 +1,21 @@
-# 📚 AGI Horizon Book
+# AGI Horizon Book (PRJ-002)
 
-**Project ID:** PRJ-002  
-**Status:** IN PROGRESS 🔵  
-**Last Synced:** 2026-01-31
+**Status:** progress
 
----
+**Description:** 500-page book on AGI. Each chapter ~25 pages with AI-generated images.
 
-## 📝 Description
-
-500-page book on AGI. Each chapter ~25 pages with AI-generated images.
-
----
-
-## 📋 Tasks
-
-| Status | Task |
-|--------|------|
-| 🔵 PROGRESS | Ch 1: Dawn of Machine Minds |
-| ⬜ TODO | Ch 2: TBD |
-
----
-
-## 📂 Key Files
-
+## Key Files
 /chapters/01-dawn.md — Chapter 1
 /research/sources.md — Research notes
 
----
+## Blockers
 
-## 🚧 Blockers
-
-None
-
----
-
-## 📤 Handoff Notes
-
+## Handoff Notes
 Chapter 1 scope defined. Need to ask Kris about target audience level and preferred narrative style before starting.
 
----
+## Tasks
 
-*Auto-synced from Taylor's Board*
+| ID | Name | Status |
+|----|------|--------|
+| PRJ-002-T01 | Ch 1: Dawn of Machine Minds | progress |
+| PRJ-002-T02 | Ch 2: TBD | todo |

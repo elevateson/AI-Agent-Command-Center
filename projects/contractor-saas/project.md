@@ -1,41 +1,17 @@
-# 🔨 Contractor SaaS
+# Contractor SaaS (PRJ-004)
 
-**Project ID:** PRJ-004  
-**Status:** IDEA 💡  
-**Last Synced:** 2026-01-31
+**Status:** idea
 
----
+**Description:** White-label construction management SaaS. Target: $99-149/mo.
 
-## 📝 Description
+## Key Files
 
-White-label construction management SaaS. Target: $99-149/mo.
+## Blockers
 
----
+## Handoff Notes
 
-## 📋 Tasks
+## Tasks
 
-| Status | Task |
-|--------|------|
-| ⬜ TODO | Define MVP Scope |
-
----
-
-## 📂 Key Files
-
-None specified
-
----
-
-## 🚧 Blockers
-
-None
-
----
-
-## 📤 Handoff Notes
-
-None
-
----
-
-*Auto-synced from Taylor's Board*
+| ID | Name | Status |
+|----|------|--------|
+| PRJ-004-T01 | Define MVP Scope | todo |
