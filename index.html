@@ -585,6 +585,26 @@ body {
   z-index: 100;
 }
 .refresh-btn:hover { background: #1976d2; }
+.sync-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 140px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(255,152,0,0.4);
+  z-index: 100;
+}
+.sync-btn:hover { background: linear-gradient(135deg, #f57c00, #e65100); }
+.sync-btn.syncing { opacity: 0.7; pointer-events: none; }
 .push-btn {
   position: fixed;
   bottom: 20px;
@@ -1274,6 +1294,7 @@ body {
 </div>
 
 <button class="refresh-btn" id="refresh-btn">🔄 Refresh</button>
+<button class="sync-btn" id="sync-btn">📤 Sync</button>
 <button class="push-btn" id="push-btn">🚀 Push Task</button>
 
 <!-- TASK DETAIL MODAL -->
@@ -1937,6 +1958,38 @@ body {
   
   // Load saved projects on startup
   loadFromLocalStorage();
+  
+  // ========== SYNC BUTTON ==========
+  document.getElementById('sync-btn').addEventListener('click', () => {
+    const syncBtn = document.getElementById('sync-btn');
+    syncBtn.classList.add('syncing');
+    syncBtn.innerHTML = '⏳ Syncing...';
+    
+    // Prepare export data
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      version: '1.0',
+      projects: projectData
+    };
+    
+    // Create and download JSON file
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'projects-sync.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Reset button after delay
+    setTimeout(() => {
+      syncBtn.classList.remove('syncing');
+      syncBtn.innerHTML = '📤 Sync';
+      alert('✅ Projects exported!\\n\\nFile saved to Downloads.\\nTell Taylor: "sync projects" to update project files.');
+    }, 500);
+  });
   
   // ========== TASK CLICK → EDIT MODAL ==========
   document.querySelectorAll('.task').forEach(task => {
