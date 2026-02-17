@@ -515,14 +515,28 @@ var Board = (function() {
     if (!task.comments) return;
     task.comments.forEach(function(c) {
       var assignee = Utils.getAssignee(c.by);
-      list.appendChild(Utils.el('div', { className: 'comment-item' },
+      var commentDiv = Utils.el('div', { className: 'comment-item' },
         Utils.el('div', { className: 'comment-header' },
           Utils.el('span', { className: 'comment-author' }, assignee.emoji + ' ' + assignee.name),
           Utils.el('span', { className: 'comment-time' }, Utils.timeAgo(c.timestamp))
-        ),
-        Utils.el('div', { className: 'comment-text' }, c.text)
-      ));
+        )
+      );
+      // Render comment text with @mention highlighting
+      var textDiv = document.createElement('div');
+      textDiv.className = 'comment-text';
+      textDiv.innerHTML = Utils.renderMentions(c.text);
+      commentDiv.appendChild(textDiv);
+      list.appendChild(commentDiv);
     });
+    // Add mention hint below comments
+    var hint = document.getElementById('mention-hint');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'mention-hint';
+      hint.className = 'mention-hint';
+      hint.textContent = 'Tip: Use @kris @taylor or @nyx to tag someone — they\'ll get a notification';
+      list.parentNode.insertBefore(hint, list.nextSibling);
+    }
     list.scrollTop = list.scrollHeight;
   }
 
@@ -761,5 +775,10 @@ var Board = (function() {
     });
   }
 
-  return { render: render, init: init, openAddTaskModal: openAddTaskModal };
+  function openTask(taskId) {
+    var task = DataStore.getTask(taskId);
+    if (task) openEditModal(task);
+  }
+
+  return { render: render, init: init, openAddTaskModal: openAddTaskModal, openTask: openTask };
 })();

@@ -84,8 +84,114 @@ var App = (function() {
       });
     }
 
+    // Notification bell
+    initNotifications();
+
+    // Listen for new notifications
+    DataStore.on('notificationAdded', function() { updateNotifBadge(); });
+    DataStore.on('dataChanged', function() { updateNotifBadge(); });
+
     // Render initial tab
     switchTab('dashboard');
+  }
+
+  // ==================== NOTIFICATIONS ====================
+
+  var currentUser = 'kris'; // Default perspective
+
+  function initNotifications() {
+    var bell = document.getElementById('notif-bell');
+    var panel = document.getElementById('notif-panel');
+    var markAll = document.getElementById('notif-mark-all');
+
+    if (bell) {
+      bell.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = panel.style.display !== 'none';
+        panel.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) renderNotifList();
+      });
+    }
+
+    if (markAll) {
+      markAll.addEventListener('click', function() {
+        DataStore.markAllNotificationsRead(currentUser);
+        renderNotifList();
+        updateNotifBadge();
+      });
+    }
+
+    // Close panel when clicking outside
+    document.addEventListener('click', function(e) {
+      if (panel && !panel.contains(e.target) && e.target !== bell) {
+        panel.style.display = 'none';
+      }
+    });
+
+    updateNotifBadge();
+  }
+
+  function updateNotifBadge() {
+    var badge = document.getElementById('notif-badge');
+    if (!badge) return;
+    var count = DataStore.getUnreadCount(currentUser);
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'flex' : 'none';
+  }
+
+  function renderNotifList() {
+    var list = document.getElementById('notif-list');
+    if (!list) return;
+    var notifs = DataStore.getNotifications(currentUser);
+    if (notifs.length === 0) {
+      list.innerHTML = '';
+      var empty = document.createElement('div');
+      empty.className = 'notif-empty';
+      empty.textContent = 'No notifications yet. Use @kris, @taylor, or @nyx in comments to tag someone.';
+      list.appendChild(empty);
+      return;
+    }
+    list.innerHTML = '';
+    notifs.slice(0, 30).forEach(function(n) {
+      var item = document.createElement('div');
+      item.className = 'notif-item' + (n.read ? '' : ' unread');
+      
+      var from = document.createElement('div');
+      from.className = 'notif-from';
+      var sender = Utils.getAssignee(n.from);
+      from.textContent = sender.emoji + ' ' + sender.name + ' mentioned you';
+      item.appendChild(from);
+
+      if (n.taskTitle) {
+        var taskName = document.createElement('div');
+        taskName.className = 'notif-task-name';
+        taskName.textContent = '📋 ' + n.taskTitle;
+        item.appendChild(taskName);
+      }
+
+      var text = document.createElement('div');
+      text.className = 'notif-text';
+      text.textContent = n.text.length > 80 ? n.text.substring(0, 80) + '...' : n.text;
+      item.appendChild(text);
+
+      var time = document.createElement('div');
+      time.className = 'notif-time';
+      time.textContent = Utils.timeAgo(n.timestamp);
+      item.appendChild(time);
+
+      item.addEventListener('click', function() {
+        DataStore.markNotificationRead(n.id);
+        updateNotifBadge();
+        if (n.taskId) {
+          // Switch to board and open task
+          switchTab('board');
+          setTimeout(function() { Board.openTask(n.taskId); }, 100);
+        }
+        document.getElementById('notif-panel').style.display = 'none';
+      });
+
+      list.appendChild(item);
+    });
   }
 
   // ==================== TAB SWITCHING ====================

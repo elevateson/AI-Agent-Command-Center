@@ -51,6 +51,7 @@ var DataStore = (function() {
         if (!data.tasks) data.tasks = [];
         if (!data.activityLog) data.activityLog = [];
         if (!data.templates) data.templates = [];
+        if (!data.notifications) data.notifications = [];
         if (!data.settings) data.settings = getDefaultSettings();
         // Migrate tasks to have new fields
         data.tasks.forEach(function(t) {
@@ -83,6 +84,7 @@ var DataStore = (function() {
         tasks: [],
         activityLog: [],
         templates: [],
+        notifications: [],
         settings: getDefaultSettings(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -269,6 +271,22 @@ var DataStore = (function() {
     task.activityLog.push({ timestamp: comment.timestamp, action: 'Comment added by ' + (Utils.getAssignee(by).name), by: by });
     logActivity('comment_added', { taskId: taskId, details: Utils.getAssignee(by).name + ' commented on "' + task.title + '"' }, by);
     task.updatedAt = comment.timestamp;
+    // Parse @mentions and create notifications
+    var mentions = Utils.parseMentions(text);
+    if (mentions.length > 0) {
+      mentions.forEach(function(userId) {
+        addNotification({
+          type: 'mention',
+          taskId: taskId,
+          taskTitle: task.title,
+          from: by,
+          to: userId,
+          text: text,
+          timestamp: comment.timestamp
+        });
+      });
+      logActivity('mention', { taskId: taskId, details: Utils.getAssignee(by).name + ' tagged ' + mentions.map(function(m) { return '@' + Utils.getAssignee(m).name; }).join(', ') + ' in "' + task.title + '"' }, by);
+    }
     save();
     emit('taskUpdated', task);
     emit('dataChanged');
@@ -372,6 +390,54 @@ var DataStore = (function() {
 
   function getActivityForProject(projectId) {
     return (data.activityLog || []).filter(function(a) { return a.projectId === projectId; });
+  }
+
+  // ==================== NOTIFICATIONS / @MENTIONS ====================
+
+  function addNotification(notif) {
+    if (!data.notifications) data.notifications = [];
+    data.notifications.unshift({
+      id: Utils.generateId('ntf'),
+      type: notif.type || 'mention',
+      taskId: notif.taskId || null,
+      taskTitle: notif.taskTitle || '',
+      from: notif.from || 'system',
+      to: notif.to || '',
+      text: notif.text || '',
+      read: false,
+      timestamp: notif.timestamp || new Date().toISOString()
+    });
+    if (data.notifications.length > 200) data.notifications = data.notifications.slice(0, 200);
+    save();
+    emit('notificationAdded', data.notifications[0]);
+    emit('dataChanged');
+  }
+
+  function getNotifications(userId, unreadOnly) {
+    if (!data.notifications) data.notifications = [];
+    var notifs = data.notifications.filter(function(n) { return n.to === userId; });
+    if (unreadOnly) notifs = notifs.filter(function(n) { return !n.read; });
+    return notifs;
+  }
+
+  function markNotificationRead(notifId) {
+    if (!data.notifications) return;
+    var n = data.notifications.find(function(x) { return x.id === notifId; });
+    if (n) { n.read = true; save(); emit('dataChanged'); }
+  }
+
+  function markAllNotificationsRead(userId) {
+    if (!data.notifications) return;
+    data.notifications.forEach(function(n) {
+      if (n.to === userId) n.read = true;
+    });
+    save();
+    emit('dataChanged');
+  }
+
+  function getUnreadCount(userId) {
+    if (!data.notifications) return 0;
+    return data.notifications.filter(function(n) { return n.to === userId && !n.read; }).length;
   }
 
   // ==================== TIME TRACKING ====================
@@ -838,6 +904,12 @@ var DataStore = (function() {
       { id: 'act_s5', action: 'project_created', taskId: null, projectId: 'proj_realestate', details: '🧑‍💼 Kris created project "Real Estate Growth"', by: 'kris', timestamp: new Date(now - 3600000 * 24).toISOString() },
       { id: 'act_s6', action: 'task_created', taskId: null, projectId: 'proj_lod', details: 'Command Center initialized with default data', by: 'system', timestamp: new Date(now - 3600000 * 48).toISOString() }
     ];
+
+    // Seed notifications
+    data.notifications = [
+      { id: 'ntf_s1', type: 'mention', taskId: null, taskTitle: 'Review V2 website design', from: 'taylor', to: 'kris', text: '@kris V2 is live on Vercel — need your review and approval before we switch DNS', read: false, timestamp: new Date(now - 3600000 * 1).toISOString() },
+      { id: 'ntf_s2', type: 'mention', taskId: null, taskTitle: 'Verify email routing', from: 'taylor', to: 'kris', text: '@kris critical — need to know if info@lodconstruction.com routes through Wix before we migrate', read: false, timestamp: new Date(now - 3600000 * 3).toISOString() }
+    ];
   }
 
   // ==================== PUBLIC API ====================
@@ -887,6 +959,12 @@ var DataStore = (function() {
     createTemplate: createTemplate,
     deleteTemplate: deleteTemplate,
     createFromTemplate: createFromTemplate,
+    // Notifications / @Mentions
+    addNotification: addNotification,
+    getNotifications: getNotifications,
+    markNotificationRead: markNotificationRead,
+    markAllNotificationsRead: markAllNotificationsRead,
+    getUnreadCount: getUnreadCount,
     // Search
     searchAll: searchAll,
     // Reorder

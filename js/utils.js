@@ -188,6 +188,35 @@ var Utils = {
   },
 
   /**
+   * Parse @mentions in text and return array of mentioned user IDs
+   */
+  parseMentions: function(text) {
+    if (typeof text !== 'string') return [];
+    var mentions = [];
+    var regex = /@(kris|taylor|nyx)\b/gi;
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      var id = match[1].toLowerCase();
+      if (mentions.indexOf(id) === -1) mentions.push(id);
+    }
+    return mentions;
+  },
+
+  /**
+   * Render text with @mentions highlighted (returns safe HTML)
+   */
+  renderMentions: function(text) {
+    if (typeof text !== 'string') return '';
+    var safe = Utils.sanitize(text);
+    return safe.replace(/@(kris|taylor|nyx)/gi, function(match, name) {
+      var id = name.toLowerCase();
+      var member = Utils.teamMembers[id];
+      if (!member) return match;
+      return '<span class="mention" data-user="' + id + '" style="background:' + member.color + '22;color:' + member.color + ';padding:1px 4px;border-radius:3px;font-weight:600;cursor:pointer;">' + member.emoji + ' @' + member.name + '</span>';
+    });
+  },
+
+  /**
    * Team member info
    */
   teamMembers: {
