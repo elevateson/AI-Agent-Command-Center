@@ -1,11 +1,11 @@
 'use strict';
 
 /**
- * calendar.js — Calendar/timeline view
+ * calendar.js — Calendar/timeline view with due date color coding
  */
 
 var Calendar = (function() {
-  var viewMode = 'month'; // 'week' or 'month'
+  var viewMode = 'month';
   var currentDate = new Date();
 
   function render() {
@@ -15,48 +15,40 @@ var Calendar = (function() {
 
     // Controls
     var controls = Utils.el('div', { className: 'cal-controls' });
-    var prevBtn = Utils.el('button', { className: 'btn btn-secondary btn-sm', onClick: function() { navigate(-1); } }, '◀');
-    var nextBtn = Utils.el('button', { className: 'btn btn-secondary btn-sm', onClick: function() { navigate(1); } }, '▶');
-    var todayBtn = Utils.el('button', { className: 'btn btn-secondary btn-sm', onClick: function() { currentDate = new Date(); render(); } }, 'Today');
+    controls.appendChild(Utils.el('button', { className: 'btn btn-secondary btn-sm', onClick: function() { navigate(-1); } }, '◀'));
+    controls.appendChild(Utils.el('button', { className: 'btn btn-secondary btn-sm', onClick: function() { currentDate = new Date(); render(); } }, 'Today'));
 
     var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     var titleText = viewMode === 'month'
       ? months[currentDate.getMonth()] + ' ' + currentDate.getFullYear()
       : 'Week of ' + Utils.formatDate(Utils.getWeekStart(currentDate).toISOString());
-    var title = Utils.el('h2', { className: 'cal-title' }, titleText);
+    controls.appendChild(Utils.el('h2', { className: 'cal-title' }, titleText));
 
-    var viewToggle = Utils.el('div', { className: 'cal-view-toggle' },
+    controls.appendChild(Utils.el('div', { className: 'cal-view-toggle' },
       Utils.el('button', { className: 'btn btn-sm ' + (viewMode === 'week' ? 'btn-primary' : 'btn-secondary'),
         onClick: function() { viewMode = 'week'; render(); } }, 'Week'),
       Utils.el('button', { className: 'btn btn-sm ' + (viewMode === 'month' ? 'btn-primary' : 'btn-secondary'),
         onClick: function() { viewMode = 'month'; render(); } }, 'Month')
-    );
-
-    controls.appendChild(prevBtn);
-    controls.appendChild(todayBtn);
-    controls.appendChild(title);
-    controls.appendChild(viewToggle);
-    controls.appendChild(nextBtn);
+    ));
+    controls.appendChild(Utils.el('button', { className: 'btn btn-secondary btn-sm', onClick: function() { navigate(1); } }, '▶'));
     container.appendChild(controls);
 
-    if (viewMode === 'month') {
-      renderMonth(container);
-    } else {
-      renderWeek(container);
-    }
+    if (viewMode === 'month') renderMonth(container);
+    else renderWeek(container);
 
     // Legend
-    var legend = Utils.el('div', { className: 'cal-legend' },
+    container.appendChild(Utils.el('div', { className: 'cal-legend' },
       Utils.el('span', { className: 'cal-legend-item' },
         Utils.el('span', { className: 'cal-dot', style: { background: '#f44336' } }), ' Overdue'),
       Utils.el('span', { className: 'cal-legend-item' },
         Utils.el('span', { className: 'cal-dot', style: { background: '#ff9800' } }), ' Due Today'),
       Utils.el('span', { className: 'cal-legend-item' },
+        Utils.el('span', { className: 'cal-dot', style: { background: '#ffeb3b' } }), ' This Week'),
+      Utils.el('span', { className: 'cal-legend-item' },
         Utils.el('span', { className: 'cal-dot', style: { background: '#2196f3' } }), ' Upcoming'),
       Utils.el('span', { className: 'cal-legend-item' },
         Utils.el('span', { className: 'cal-dot', style: { background: '#4caf50' } }), ' Completed')
-    );
-    container.appendChild(legend);
+    ));
 
     // Tasks without due dates
     var noDueTasks = DataStore.getTasks().filter(function(t) { return !t.dueDate && t.status !== 'done'; });
@@ -80,11 +72,8 @@ var Calendar = (function() {
   }
 
   function navigate(dir) {
-    if (viewMode === 'month') {
-      currentDate.setMonth(currentDate.getMonth() + dir);
-    } else {
-      currentDate.setDate(currentDate.getDate() + (dir * 7));
-    }
+    if (viewMode === 'month') currentDate.setMonth(currentDate.getMonth() + dir);
+    else currentDate.setDate(currentDate.getDate() + (dir * 7));
     render();
   }
 
@@ -92,6 +81,16 @@ var Calendar = (function() {
     return DataStore.getTasks().filter(function(t) {
       return t.dueDate && t.dueDate.slice(0, 10) === dateStr;
     });
+  }
+
+  function getTaskColor(t) {
+    if (t.status === 'done') return '#4caf50';
+    var proj = DataStore.getProject(t.projectId);
+    var urgency = Utils.getDueUrgency(t.dueDate, t.status);
+    if (urgency === 'overdue') return '#f44336';
+    if (urgency === 'today') return '#ff9800';
+    if (urgency === 'this-week') return '#ffeb3b';
+    return proj ? proj.color : '#2196f3';
   }
 
   function renderMonth(container) {
@@ -102,18 +101,12 @@ var Calendar = (function() {
     var today = new Date();
 
     var grid = Utils.el('div', { className: 'cal-month-grid' });
-
-    // Day headers
     ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(function(d) {
       grid.appendChild(Utils.el('div', { className: 'cal-day-header' }, d));
     });
-
-    // Empty cells before first day
     for (var i = 0; i < firstDay; i++) {
       grid.appendChild(Utils.el('div', { className: 'cal-day empty' }));
     }
-
-    // Days
     for (var d = 1; d <= daysInMonth; d++) {
       var dateStr = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
       var dayTasks = getTasksForDate(dateStr);
@@ -122,8 +115,7 @@ var Calendar = (function() {
       cell.appendChild(Utils.el('div', { className: 'cal-day-num' }, String(d)));
 
       dayTasks.slice(0, 3).forEach(function(t) {
-        var proj = DataStore.getProject(t.projectId);
-        var color = t.status === 'done' ? '#4caf50' : (Utils.isOverdue(t.dueDate) ? '#f44336' : (proj ? proj.color : '#2196f3'));
+        var color = getTaskColor(t);
         var taskEl = Utils.el('div', { className: 'cal-task-pill', style: { background: color + '33', borderLeftColor: color } });
         taskEl.appendChild(document.createTextNode(t.title.length > 15 ? t.title.slice(0, 15) + '…' : t.title));
         cell.appendChild(taskEl);
@@ -131,10 +123,8 @@ var Calendar = (function() {
       if (dayTasks.length > 3) {
         cell.appendChild(Utils.el('div', { className: 'cal-more' }, '+' + (dayTasks.length - 3) + ' more'));
       }
-
       grid.appendChild(cell);
     }
-
     container.appendChild(grid);
   }
 
@@ -142,6 +132,7 @@ var Calendar = (function() {
     var weekStart = Utils.getWeekStart(currentDate);
     var grid = Utils.el('div', { className: 'cal-week-grid' });
     var today = new Date();
+    var dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
     for (var i = 0; i < 7; i++) {
       var d = new Date(weekStart);
@@ -149,35 +140,31 @@ var Calendar = (function() {
       var dateStr = d.toISOString().slice(0, 10);
       var dayTasks = getTasksForDate(dateStr);
       var isToday = d.toDateString() === today.toDateString();
-      var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
       var col = Utils.el('div', { className: 'cal-week-day' + (isToday ? ' today' : '') });
       col.appendChild(Utils.el('div', { className: 'cal-week-header' },
-        Utils.el('span', { className: 'cal-week-name' }, dayNames[d.getDay()]),
+        Utils.el('span', { className: 'cal-week-name' }, dayNames[i]),
         Utils.el('span', { className: 'cal-week-num' + (isToday ? ' today-num' : '') }, String(d.getDate()))
       ));
 
       dayTasks.forEach(function(t) {
-        var proj = DataStore.getProject(t.projectId);
         var assignee = Utils.getAssignee(t.assignee);
-        var color = t.status === 'done' ? '#4caf50' : (Utils.isOverdue(t.dueDate) ? '#f44336' : (proj ? proj.color : '#2196f3'));
-        var taskCard = Utils.el('div', { className: 'cal-week-task', style: { borderLeftColor: color } },
+        var color = getTaskColor(t);
+        var proj = DataStore.getProject(t.projectId);
+        col.appendChild(Utils.el('div', { className: 'cal-week-task', style: { borderLeftColor: color } },
           Utils.el('div', { className: 'cal-week-task-title' }, t.title),
           Utils.el('div', { className: 'cal-week-task-meta' },
             Utils.el('span', null, assignee.emoji),
             proj ? Utils.el('span', { style: { color: proj.color } }, proj.name) : Utils.el('span')
           )
-        );
-        col.appendChild(taskCard);
+        ));
       });
 
       if (dayTasks.length === 0) {
         col.appendChild(Utils.el('div', { className: 'cal-empty-day' }, '—'));
       }
-
       grid.appendChild(col);
     }
-
     container.appendChild(grid);
   }
 

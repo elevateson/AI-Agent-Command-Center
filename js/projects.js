@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * projects.js — Project management, detail views
+ * projects.js — Project management with color picker, detail views, activity
  */
 
 var Projects = (function() {
@@ -17,7 +17,6 @@ var Projects = (function() {
       return;
     }
 
-    // Header with new project button
     var header = Utils.el('div', { className: 'projects-header' },
       Utils.el('h2', null, '📁 Projects'),
       Utils.el('button', { className: 'btn btn-primary', onClick: function() { openProjectModal(); } }, '+ New Project')
@@ -38,22 +37,17 @@ var Projects = (function() {
       var card = Utils.el('div', { className: 'project-card', style: { borderLeftColor: proj.color, borderLeftWidth: '4px' } });
       card.addEventListener('click', function() { showDetail(proj.id); });
 
-      var cardHeader = Utils.el('div', { className: 'project-header' },
+      card.appendChild(Utils.el('div', { className: 'project-header' },
         Utils.el('h2', null, proj.name),
         Utils.el('span', { className: 'status-badge', style: { background: Utils.projectStatusColor(proj.status) } },
           Utils.projectStatusLabel(proj.status))
-      );
-      card.appendChild(cardHeader);
-
+      ));
       if (proj.description) {
         card.appendChild(Utils.el('p', { className: 'project-desc' }, proj.description));
       }
-
-      var bar = Utils.el('div', { className: 'progress-bar' },
+      card.appendChild(Utils.el('div', { className: 'progress-bar' },
         Utils.el('div', { className: 'fill', style: { width: pct + '%', background: proj.color } })
-      );
-      card.appendChild(bar);
-
+      ));
       var meta = Utils.el('div', { className: 'project-meta' },
         Utils.el('span', null, Utils.priorityEmoji(proj.priority) + ' ' + proj.priority),
         Utils.el('span', null, '📋 ' + total + ' tasks'),
@@ -65,7 +59,6 @@ var Projects = (function() {
       }
       card.appendChild(meta);
 
-      // Assignees
       if (proj.assignees && proj.assignees.length > 0) {
         var assigneesDiv = Utils.el('div', { className: 'project-assignees' });
         proj.assignees.forEach(function(a) {
@@ -74,14 +67,12 @@ var Projects = (function() {
         });
         card.appendChild(assigneesDiv);
       }
-
       grid.appendChild(card);
     });
 
     if (projects.length === 0) {
       grid.appendChild(Utils.el('div', { className: 'empty-state' }, 'No projects yet. Create one!'));
     }
-
     container.appendChild(grid);
   }
 
@@ -104,13 +95,11 @@ var Projects = (function() {
     var total = tasks.length;
     var pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    // Back button
-    var backBtn = Utils.el('button', { className: 'btn btn-secondary', onClick: hideDetail,
-      style: { marginBottom: '20px' } }, '← Back to Projects');
-    container.appendChild(backBtn);
+    container.appendChild(Utils.el('button', { className: 'btn btn-secondary', onClick: hideDetail,
+      style: { marginBottom: '20px' } }, '← Back to Projects'));
 
-    // Project header
-    var header = Utils.el('div', { className: 'proj-detail-header', style: { borderLeftColor: proj.color } },
+    // Header
+    container.appendChild(Utils.el('div', { className: 'proj-detail-header', style: { borderLeftColor: proj.color } },
       Utils.el('div', { className: 'proj-detail-title-row' },
         Utils.el('h2', null, proj.name),
         Utils.el('span', { className: 'status-badge', style: { background: Utils.projectStatusColor(proj.status) } },
@@ -122,11 +111,10 @@ var Projects = (function() {
         Utils.el('span', null, Utils.priorityEmoji(proj.priority) + ' Priority: ' + proj.priority),
         Utils.el('span', null, '📋 ' + total + ' tasks, ' + pct + '% complete')
       )
-    );
-    container.appendChild(header);
+    ));
 
     // Progress breakdown
-    var breakdown = Utils.el('div', { className: 'proj-breakdown' });
+    var breakdown = Utils.el('div', { className: 'proj-section' });
     breakdown.appendChild(Utils.el('h3', null, '📊 Progress Breakdown'));
     var statusCounts = {};
     tasks.forEach(function(t) { statusCounts[t.status] = (statusCounts[t.status] || 0) + 1; });
@@ -149,8 +137,7 @@ var Projects = (function() {
       var linksSection = Utils.el('div', { className: 'proj-section' });
       linksSection.appendChild(Utils.el('h3', null, '🔗 Links'));
       proj.links.forEach(function(link) {
-        var a = Utils.el('a', { href: link.url, target: '_blank', rel: 'noopener', className: 'proj-link' }, link.label);
-        linksSection.appendChild(a);
+        linksSection.appendChild(Utils.el('a', { href: Utils.sanitizeUrl(link.url), target: '_blank', rel: 'noopener noreferrer', className: 'proj-link' }, link.label));
       });
       container.appendChild(linksSection);
     }
@@ -160,12 +147,11 @@ var Projects = (function() {
       var msSection = Utils.el('div', { className: 'proj-section' });
       msSection.appendChild(Utils.el('h3', null, '🏁 Milestones'));
       proj.milestones.forEach(function(ms) {
-        var msItem = Utils.el('div', { className: 'milestone-item ' + (ms.completed ? 'completed' : '') },
+        msSection.appendChild(Utils.el('div', { className: 'milestone-item ' + (ms.completed ? 'completed' : '') },
           Utils.el('span', { className: 'ms-check' }, ms.completed ? '✅' : '⬜'),
           Utils.el('span', { className: 'ms-name' }, ms.name),
           Utils.el('span', { className: 'ms-date' }, Utils.formatDate(ms.date))
-        );
-        msSection.appendChild(msItem);
+        ));
       });
       container.appendChild(msSection);
     }
@@ -185,27 +171,35 @@ var Projects = (function() {
         Utils.el('span', { className: 'proj-task-title' + (t.status === 'done' ? ' done' : '') }, t.title),
         Utils.el('span', { className: 'proj-task-assignee' }, assignee.emoji)
       );
+      if (t.dueDate && t.status !== 'done') {
+        var urgency = Utils.getDueUrgency(t.dueDate, t.status);
+        if (urgency === 'overdue') {
+          item.style.borderLeft = '3px solid #f44336';
+        }
+      }
       tasksSection.appendChild(item);
     });
     container.appendChild(tasksSection);
 
-    // Activity log (project-specific from task logs)
+    // Project Activity (from global activity log)
     var actSection = Utils.el('div', { className: 'proj-section' });
     actSection.appendChild(Utils.el('h3', null, '📝 Activity'));
-    var allActivity = [];
+    var projActivity = DataStore.getActivityForProject(proj.id);
+    // Also include task-level activity
+    var allActivity = projActivity.slice();
     tasks.forEach(function(t) {
       if (t.activityLog) {
         t.activityLog.forEach(function(a) {
-          allActivity.push({ timestamp: a.timestamp, action: t.title + ': ' + a.action, by: a.by });
+          allActivity.push({ timestamp: a.timestamp, details: t.title + ': ' + a.action, by: a.by });
         });
       }
     });
     allActivity.sort(function(a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
-    allActivity.slice(0, 10).forEach(function(a) {
+    allActivity.slice(0, 15).forEach(function(a) {
       var assignee = Utils.getAssignee(a.by);
       actSection.appendChild(Utils.el('div', { className: 'proj-activity-item' },
         Utils.el('span', null, assignee.emoji),
-        Utils.el('span', null, a.action),
+        Utils.el('span', null, a.details || a.action),
         Utils.el('span', { className: 'act-time' }, Utils.timeAgo(a.timestamp))
       ));
     });
@@ -225,9 +219,26 @@ var Projects = (function() {
     document.getElementById('proj-desc').value = proj ? (proj.description || '') : '';
     document.getElementById('proj-status').value = proj ? proj.status : 'planning';
     document.getElementById('proj-priority').value = proj ? proj.priority : 'medium';
-    document.getElementById('proj-color').value = proj ? proj.color : '#2196f3';
 
-    // Assignees checkboxes
+    // Color picker grid
+    var colorGrid = document.getElementById('proj-color-grid');
+    colorGrid.innerHTML = '';
+    var selectedColor = proj ? proj.color : '#2196f3';
+    document.getElementById('proj-color').value = selectedColor;
+
+    Utils.presetColors.forEach(function(c) {
+      var swatch = Utils.el('div', {
+        className: 'color-picker-swatch' + (c === selectedColor ? ' selected' : ''),
+        style: { background: c },
+        onClick: function() {
+          document.getElementById('proj-color').value = c;
+          colorGrid.querySelectorAll('.color-picker-swatch').forEach(function(s) { s.classList.remove('selected'); });
+          swatch.classList.add('selected');
+        }
+      });
+      colorGrid.appendChild(swatch);
+    });
+
     document.querySelectorAll('.proj-assignee-cb').forEach(function(cb) {
       cb.checked = proj ? (proj.assignees || []).indexOf(cb.value) >= 0 : false;
     });

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -19,6 +19,17 @@
     <div class="header-left">
       <h1>🎯 Command Center</h1>
       <div class="subtitle">AI Agent Task Management</div>
+    </div>
+    <div class="header-center">
+      <div class="search-wrapper" id="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="global-search" placeholder="Search tasks, projects... (⌘K)" autocomplete="off">
+        <span class="search-shortcut">⌘K</span>
+        <div class="search-results" id="search-results"></div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="theme-toggle-btn" id="theme-toggle" title="Toggle theme">🌙</button>
     </div>
     <div class="tabs">
       <button class="tab-btn active" data-tab="dashboard">🏠 Dashboard</button>
@@ -64,87 +75,153 @@
     </div>
   </div>
 
-  <!-- TASK MODAL -->
+  <!-- TASK MODAL (Edit/Create) -->
   <div id="task-modal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content modal-large">
       <div class="modal-header">
         <h2 id="modal-title">New Task</h2>
         <button class="modal-close" data-close="task-modal">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label>Title</label>
-          <input type="text" id="task-title" placeholder="Task title...">
+        <div class="modal-tabs">
+          <button class="modal-tab-btn active" data-modal-tab="details">Details</button>
+          <button class="modal-tab-btn" data-modal-tab="subtasks">Subtasks</button>
+          <button class="modal-tab-btn" data-modal-tab="comments">Comments</button>
+          <button class="modal-tab-btn" data-modal-tab="links">Links</button>
+          <button class="modal-tab-btn" data-modal-tab="dependencies">Dependencies</button>
+          <button class="modal-tab-btn" data-modal-tab="activity">Activity</button>
         </div>
-        <div class="form-group">
-          <label>Description</label>
-          <textarea id="task-desc" placeholder="Task description..."></textarea>
-        </div>
-        <div class="form-row">
+
+        <!-- Details Tab -->
+        <div class="modal-tab-content active" data-modal-panel="details">
           <div class="form-group">
-            <label>Status</label>
-            <select id="task-status">
-              <option value="blocked">🔴 Blocked</option>
-              <option value="todo" selected>🟡 To-Do</option>
-              <option value="onhold">⏸️ On Hold</option>
-              <option value="in-progress">🔵 In Progress</option>
-              <option value="done">✅ Done</option>
-            </select>
+            <label>Title</label>
+            <input type="text" id="task-title" placeholder="Task title...">
           </div>
           <div class="form-group">
-            <label>Priority</label>
-            <select id="task-priority">
-              <option value="critical">🔴 Critical</option>
-              <option value="high">🟠 High</option>
-              <option value="medium" selected>🟡 Medium</option>
-              <option value="low">🟢 Low</option>
-            </select>
+            <label>Description</label>
+            <textarea id="task-desc" placeholder="Task description..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Status</label>
+              <select id="task-status">
+                <option value="blocked">🔴 Blocked</option>
+                <option value="todo" selected>🟡 To-Do</option>
+                <option value="onhold">⏸️ On Hold</option>
+                <option value="in-progress">🔵 In Progress</option>
+                <option value="done">✅ Done</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Priority</label>
+              <select id="task-priority">
+                <option value="critical">🔴 Critical</option>
+                <option value="high">🟠 High</option>
+                <option value="medium" selected>🟡 Medium</option>
+                <option value="low">🟢 Low</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Assignee</label>
+              <select id="task-assignee">
+                <option value="">— Unassigned —</option>
+                <option value="kris">🧑‍💼 Kris</option>
+                <option value="taylor">🦉 Taylor</option>
+                <option value="nyx">🤖 Nyx</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Project</label>
+              <select id="task-project">
+                <option value="">— No Project —</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Tags (comma-separated)</label>
+            <input type="text" id="task-tags" placeholder="e.g. coding, design, urgent">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Due Date</label>
+              <input type="date" id="task-due-date">
+            </div>
+            <div class="form-group">
+              <label>AI Model</label>
+              <input type="text" id="task-model" placeholder="e.g. opus, sonnet">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Estimated Cost ($)</label>
+              <input type="number" id="task-est-cost" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+              <label>Actual Cost ($)</label>
+              <input type="number" id="task-act-cost" placeholder="0.00" step="0.01">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Progress: <span id="task-progress-val">0%</span></label>
+            <input type="range" id="task-progress" min="0" max="100" value="0">
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Assignee</label>
-            <select id="task-assignee">
-              <option value="">— Unassigned —</option>
+
+        <!-- Subtasks Tab -->
+        <div class="modal-tab-content" data-modal-panel="subtasks">
+          <div class="subtask-add-row">
+            <input type="text" id="subtask-input" placeholder="Add subtask...">
+            <button class="btn btn-primary btn-sm" id="subtask-add-btn">+ Add</button>
+          </div>
+          <div id="subtask-list" class="subtask-list"></div>
+        </div>
+
+        <!-- Comments Tab -->
+        <div class="modal-tab-content" data-modal-panel="comments">
+          <div id="comments-list" class="comments-list"></div>
+          <div class="comment-add-row">
+            <select id="comment-author" class="comment-author-select">
               <option value="kris">🧑‍💼 Kris</option>
               <option value="taylor">🦉 Taylor</option>
               <option value="nyx">🤖 Nyx</option>
+              <option value="system">⚙️ System</option>
             </select>
+            <input type="text" id="comment-input" placeholder="Add a comment...">
+            <button class="btn btn-primary btn-sm" id="comment-add-btn">Send</button>
+          </div>
+        </div>
+
+        <!-- Links Tab -->
+        <div class="modal-tab-content" data-modal-panel="links">
+          <div class="link-add-row">
+            <input type="text" id="link-label" placeholder="Label...">
+            <input type="url" id="link-url" placeholder="https://...">
+            <button class="btn btn-primary btn-sm" id="link-add-btn">+ Add</button>
+          </div>
+          <div id="links-list" class="links-list"></div>
+        </div>
+
+        <!-- Dependencies Tab -->
+        <div class="modal-tab-content" data-modal-panel="dependencies">
+          <div class="form-group">
+            <label>Blocked By (select tasks that must finish first)</label>
+            <div id="dependency-list" class="dependency-list"></div>
           </div>
           <div class="form-group">
-            <label>Project</label>
-            <select id="task-project">
-              <option value="">— No Project —</option>
+            <label>Add Blocker</label>
+            <select id="dependency-select">
+              <option value="">— Select a task —</option>
             </select>
+            <button class="btn btn-secondary btn-sm" id="dependency-add-btn" style="margin-top:8px">+ Add Blocker</button>
           </div>
         </div>
-        <div class="form-group">
-          <label>Tags (comma-separated)</label>
-          <input type="text" id="task-tags" placeholder="e.g. coding, design, urgent">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Due Date</label>
-            <input type="date" id="task-due-date">
-          </div>
-          <div class="form-group">
-            <label>AI Model</label>
-            <input type="text" id="task-model" placeholder="e.g. opus, sonnet">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Estimated Cost ($)</label>
-            <input type="number" id="task-est-cost" placeholder="0.00" step="0.01">
-          </div>
-          <div class="form-group">
-            <label>Actual Cost ($)</label>
-            <input type="number" id="task-act-cost" placeholder="0.00" step="0.01">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Progress: <span id="task-progress-val">0%</span></label>
-          <input type="range" id="task-progress" min="0" max="100" value="0">
+
+        <!-- Activity Tab -->
+        <div class="modal-tab-content" data-modal-panel="activity">
+          <div id="task-activity-list" class="task-activity-list"></div>
         </div>
       </div>
       <div class="modal-footer">
@@ -198,7 +275,8 @@
         </div>
         <div class="form-group">
           <label>Color</label>
-          <input type="color" id="proj-color" value="#2196f3">
+          <div class="color-picker-grid" id="proj-color-grid"></div>
+          <input type="hidden" id="proj-color" value="#2196f3">
         </div>
         <div class="form-group">
           <label>Team Members</label>
@@ -216,6 +294,88 @@
         <div class="modal-footer-right">
           <button class="btn btn-secondary" data-close="project-modal">Cancel</button>
           <button class="btn btn-primary" id="proj-save-btn">💾 Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK ADD MODAL -->
+  <div id="quick-add-modal" class="modal">
+    <div class="modal-content modal-small">
+      <div class="modal-header">
+        <h2>⚡ Quick Add Task</h2>
+        <button class="modal-close" data-close="quick-add-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="qa-title" placeholder="Task title..." autofocus>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Project</label>
+            <select id="qa-project"><option value="">— None —</option></select>
+          </div>
+          <div class="form-group">
+            <label>Assignee</label>
+            <select id="qa-assignee">
+              <option value="">Unassigned</option>
+              <option value="kris">🧑‍💼 Kris</option>
+              <option value="taylor">🦉 Taylor</option>
+              <option value="nyx">🤖 Nyx</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="qa-priority">
+              <option value="critical">🔴 Critical</option>
+              <option value="high">🟠 High</option>
+              <option value="medium" selected>🟡 Medium</option>
+              <option value="low">🟢 Low</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="qa-status">
+              <option value="todo" selected>🟡 To-Do</option>
+              <option value="in-progress">🔵 In Progress</option>
+              <option value="blocked">🔴 Blocked</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>From Template</label>
+          <select id="qa-template">
+            <option value="">— No Template —</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-left"></div>
+        <div class="modal-footer-right">
+          <button class="btn btn-secondary" data-close="quick-add-modal">Cancel</button>
+          <button class="btn btn-primary" id="qa-save-btn">⚡ Create</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASK DETAIL MODAL (read-only quick view) -->
+  <div id="task-detail-modal" class="modal">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h2 id="detail-modal-title">Task Detail</h2>
+        <button class="modal-close" data-close="task-detail-modal">&times;</button>
+      </div>
+      <div class="modal-body" id="task-detail-body"></div>
+      <div class="modal-footer">
+        <div class="modal-footer-left">
+          <button class="btn btn-secondary" id="detail-edit-btn">✏️ Edit</button>
+        </div>
+        <div class="modal-footer-right">
+          <button class="btn btn-secondary" data-close="task-detail-modal">Close</button>
         </div>
       </div>
     </div>
